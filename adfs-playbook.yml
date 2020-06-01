@@ -99,8 +99,8 @@
             -PrimaryIntranetAuthenticationProvider
             FormsAuthentication
         when:
-            - adfs_intra_provider.stdout.find("WindowsAuthentication") != -1
-            - adfs_intra_provider.stdout.find("CertificateAuthentication") != -1
+            (adfs_intra_provider.stdout.find("WindowsAuthentication") != -1) or
+            (adfs_intra_provider.stdout.find("CertificateAuthentication") != -1)
 
       - name: Get ADFS thumbprint
         win_shell: >
@@ -113,3 +113,4 @@
         add_host:
             name: "adfs_host"
             adfs_thumbprint: "{{ adfs_thumbprint.stdout | trim }}"
+        changed_when: false
