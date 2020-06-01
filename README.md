@@ -14,4 +14,9 @@ Included Vagrantfile uses libvirt provider. In order to use the ansible
 playbooks, with another provider or without Vagrant, you will need to
 alter the hosts file, and the roles/dc\_dns/tasks/main.yml
 
+Edit vars.yml to choose the domain name you want the playbook you want
+to create.
+
+Then run: 
+
 `ansible-playbook -i hosts playbook.yml`
