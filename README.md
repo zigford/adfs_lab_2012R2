@@ -7,3 +7,11 @@ Part 1: https://www.youtube.com/watch?v=xwWb7S6OvFI
 Part 2: https://www.youtube.com/watch?v=l91_X7CfHfM  
 Part 3: https://www.youtube.com/watch?v=lwVIxNeCrg0  
 Part 4: https://www.youtube.com/watch?v=n5r3l7pw2kg  
+
+# Notes
+
+Included Vagrantfile uses libvirt provider. In order to use the ansible
+playbooks, with another provider or without Vagrant, you will need to
+alter the hosts file, and the roles/dc\_dns/tasks/main.yml
+
+`ansible -i hosts playbook.yml'
