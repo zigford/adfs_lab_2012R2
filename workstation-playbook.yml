@@ -5,3 +5,4 @@
       - trust_app
       - trust_adfs
       - dc_dns
+      - join_domain
