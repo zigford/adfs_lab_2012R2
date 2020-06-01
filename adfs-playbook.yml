@@ -1,0 +1,115 @@
+---
+- hosts: adfs
+  vars_files: vars.yml
+  roles:
+      - dc_dns
+      - trust_app
+      - join_domain
+  tasks:
+      - name: Ensure ADFS is installed
+        win_stat:
+            path: "C:\\Windows\\System32\\ADFSDeployment_Internal\
+                   \\ADFSDeployment_Internal.psd1"
+        register: adfs
+
+      - win_feature:
+            name: ADFS-Federation
+            state: present
+            include_sub_features: true
+            include_management_tools: true
+        async: 900
+        poll: 120
+        when: adfs.stat.exists == false
+        register: adfs_install
+
+      - name: Install ADFS Certifictate
+        win_copy:
+            src: files/adfs.{{ domain }}.pfx
+            dest: C:\ansible\
+
+      - win_certificate_store:
+            path: C:\ansible\adfs.{{ domain }}.pfx
+            state: present
+            password: password
+            key_exportable: true
+            key_storage: machine
+            file_type: pkcs12
+        register: importedCert
+        become: true
+        become_user: vagrant
+
+      - name: Export public key
+        win_certificate_store:
+            path: C:\ansible\adfs.{{ domain }}.cer
+            state: exported
+            key_exportable: false
+            thumbprint: "{{importedCert.thumbprints.0}}"
+        register: new_adfs_pub_key
+        when: importedCert.changed
+
+      - name: Copy public key back to ansible
+        fetch:
+            dest: files/
+            src: C:\ansible\adfs.{{ domain }}.cer
+            flat: true
+        when: new_adfs_pub_key.changed
+
+      - name: Add ADFS Cert to trusted root CA
+        include_role:
+            name: trust_adfs
+
+      - name: Install ADFS Farm
+        win_shell: |
+            $cred = New-Object -TypeName `
+                System.Management.Automation.PSCredential `
+                -ArgumentList "{{short_domain}}\svc_adfs",
+                (ConvertTo-SecureString -Force -AsPlainText -String `
+                  "B0bP4ssw0rd")
+            $cd = New-Object -TypeName `
+                System.Management.Automation.PSCredential `
+                -ArgumentList "{{short_domain}}\administrator",
+                (ConvertTo-SecureString -Force -AsPlainText -String `
+                  "vagrant")
+
+            Import-Module ADFS
+            Install-AdfsFarm `
+                -CertificateThumbprint:"{{importedCert.thumbprints.0}}" `
+                -FederationServiceDisplayName:"{{adfs_service}}" `
+                -FederationServiceName:"adfs.{{domain}}" `
+                -ServiceAccountCredential:$cred `
+                -credential:$cd
+             New-Item -Path C:\Windows\adfs.txt -ItemType File
+        args:
+            creates: C:\Windows\adfs.txt
+        become: true
+        become_user: "{{ short_domain }}\\administrator"
+        register: install_adfs
+
+      - name: Get ADFS Global Intranet Auth Policy
+        win_shell: >
+            Get-AdfsGlobalAuthenticationPolicy |
+            Select-Object -Expandproperty
+            PrimaryIntranetAuthenticationProvider
+        register: adfs_intra_provider
+        changed_when: false
+
+      - name: Ensure ADFS Global Intranet Auth policy set to forms
+        win_shell: >
+            Set-AdfsGlobalAuthenticationPolicy
+            -PrimaryIntranetAuthenticationProvider
+            FormsAuthentication
+        when:
+            - adfs_intra_provider.stdout.find("WindowsAuthentication") != -1
+            - adfs_intra_provider.stdout.find("CertificateAuthentication") != -1
+
+      - name: Get ADFS thumbprint
+        win_shell: >
+            Get-AdfsCertificate -CertificateType Token-Signing |
+            Select-Object -ExpandProperty Thumbprint
+        changed_when: false
+        register: adfs_thumbprint
+
+      - name: register adfs host thumbprint
+        add_host:
+            name: "adfs_host"
+            adfs_thumbprint: "{{ adfs_thumbprint.stdout | trim }}"

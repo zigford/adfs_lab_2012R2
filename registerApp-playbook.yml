@@ -1,0 +1,37 @@
+---
+- hosts: adfs
+  vars_files: vars.yml
+  tasks:
+      - name: download sample web app
+        win_get_url:
+            url: "https://msdnshared.blob.core.windows.net/media\
+                  /TNBlogsFS/prod.evol.blogs.technet.com\
+                  /telligent.evolution.components.attachments\
+                  /01/8598/00/00/03/64/54/88/SampApp%20and%20Rules.zip"
+            dest: '%TEMP%\SampAppRules.zip'
+            checksum: 0e2e51c8e43e1639ad6c0e87e960564add83b695
+
+      - name: extract sample app
+        win_unzip:
+            src: '%TEMP%\SampAppRules.zip'
+            dest: '%TEMP%\SampApp'
+            creates: '%TEMP%\SampApp'
+
+      - name: Extract rules
+        win_unzip:
+            src: '%TEMP%\SampApp\SampApp and Rules\SampAppRules.zip'
+            dest: 'C:\ansible'
+            creates: 'C:\ansible\IssuanceTransformRules.txt'
+
+      - name: Add relying party trust to adfs
+        win_shell: >
+            Add-AdfsRelyingPartyTrust -Name
+            "Sample Claims Aware Application"
+            -IssuanceAuthorizationRulesFile
+            C:\ansible\IssuanceAuthorizationRules.txt
+            -IssuanceTransformRulesFile
+            C:\ansible\IssuanceTransformRules.txt
+            -MetadataUrl
+            https://app.{{ domain }}/sampapp/federationmetadata/2007-06/federationmetadata.xml
+        become: true
+        become_user: "{{ short_domain }}\\administrator"

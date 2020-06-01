@@ -1,0 +1,135 @@
+---
+- hosts: dc
+  vars_files: vars.yml
+  roles:
+    - {role: upgrade_wmf51, when: ansible_powershell_version == 4}
+    - pwsh_gallery
+  tasks:
+    - name: Ensure AD Domain Services is installed
+      win_feature:
+        name: AD-Domain-Services
+        state: present
+        include_sub_features: true
+        include_management_tools: true
+      async: 900
+      poll: 120
+
+    - name: Create a new domain in a new forest
+      win_domain:
+        dns_domain_name: "{{ domain }}"
+        safe_mode_password: password123!
+        create_dns_delegation: no
+      register: domain_install
+
+    - include_role:
+        name: dc_dns
+
+    - name: Reboot after DC install
+      when: domain_install.reboot_required == true
+      win_reboot:
+
+    - name: Add DNS entry for App server
+      win_dns_record:
+        name: app
+        type: a
+        value: 192.168.33.30
+        zone: "{{ domain }}"
+
+    - name: Create ADFS MSA Account
+      win_domain_user:
+        name: svc_adfs
+        firstname: ADFS
+        surname: ServiceAccount
+        upn: svc_adfs@{{ domain }}
+        password: B0bP4ssw0rd
+        password_never_expires: true
+        groups: "Domain Admins"
+        groups_action: add
+        state: present
+
+    # Create certificates needed for all other servers
+
+    - name: Create App certificate
+      win_shell: |
+          $Cert = New-SelfSignedCertificate -DnsName "app.{{ domain }}" `
+                  -CertStoreLocation "Cert:\\LocalMachine\\My"
+          $Cert.Thumbprint
+          New-Item -ItemType Directory "C:\\ansible" | Out-Null
+      register: app_cert
+      args:
+        creates: C:\ansible
+
+    - debug:
+        msg: "{{ app_cert }}"
+
+    - name: Export public app certificate
+      win_certificate_store:
+        path: C:\ansible\app.{{ domain }}.cer
+        state: exported
+        thumbprint: "{{ app_cert.stdout | trim }}"
+      when: app_cert.changed
+
+    - name: Export private app certificate
+      win_shell: |
+          $store_name = [System.Security.Cryptography.X509Certificates.StoreName]"My"
+          $store_location = [System.Security.Cryptography.X509Certificates.Storelocation]"LocalMachine"
+          $store = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Store -ArgumentList $store_name, $store_location
+          $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+          $thumbprint = "{{ app_cert.stdout | trim }}"
+          $store_certificates = $store.Certificates
+          $found_certs = $store_certificates.Find([System.Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumbprint, $false)
+          $b = $found_certs.Export('pkcs12', 'password')
+          $path='C:\ansible\app.{{domain}}.pfx'
+          [System.IO.File]::WriteAllBytes($path, $b)
+      args:
+        creates: C:\ansible\app.{{ domain }}.pfx
+      when: app_cert.changed
+
+    - name: Ensure encryptdecrypt ps module present
+      win_psmodule:
+        name: pspki
+        state: present
+
+    - name: Ensure permissions on Lab Cert dir
+      win_acl:
+        path: c:\ansible
+        user: BUILTIN\Users
+        rights: FullControl
+        type: allow
+
+    - name: Ensure ADFS cert generated
+      win_shell: >4
+          Import-Module PSPKI;
+          New-SelfsignedCertificateEx
+          -Subject "CN=adfs.{{ domain }}"
+          -ProviderName
+          "Microsoft Enhanced RSA and AES Cryptographic Provider"
+          -KeyLength 2048
+          -SignatureAlgorithm sha256
+          -EKU 1.3.6.1.5.5.7.3.1, 1.3.6.1.5.5.7.3.2
+          -KeyUsage "KeyEncipherment, DigitalSignature"
+          -AllowSMIME
+          -Path C:\ansible\adfs.{{ domain }}.pfx
+          -Password (ConvertTo-SecureString "password" -AsPlainText -Force)
+          -Exportable
+      args:
+        creates: C:\ansible\adfs.{{ domain }}.pfx
+      become: true
+      become_user: vagrant
+      register: newcert
+
+    - name: Copy certs back to Ansible
+      fetch:
+        dest: files/
+        src: C:\ansible\app.{{ domain }}.pfx
+        flat: true
+
+    - fetch:
+        dest: files/
+        src: C:\ansible\app.{{ domain }}.cer
+        flat: true
+
+    - fetch:
+        dest: files/
+        src: C:\ansible\adfs.{{ domain }}.pfx
+        flat: true

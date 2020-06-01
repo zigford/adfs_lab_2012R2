@@ -1,0 +1,5 @@
+---
+# variables for adfs lab
+domain: jph.test
+short_domain: jph
+adfs_service: Jesse Test

@@ -1,0 +1,43 @@
+---
+- hosts: app
+  vars_files: vars.yml
+  roles:
+      - trust_app
+      - trust_adfs
+      - dc_dns
+  tasks:
+      - name: Upload private key pair
+        win_copy:
+            src: files/app.{{ domain }}.pfx
+            dest: C:\ansible\
+
+      - name: Import private key par
+        win_certificate_store:
+            path: C:\ansible\app.{{ domain }}.pfx
+            state: present
+            password: password
+            key_exportable: true
+        register: iis_cert
+
+      - name: Install IIS
+        win_feature:
+            name: Web-Server,
+                  Web-App-Dev,
+                  Web-Net-Ext45,
+                  Web-Asp-Net45,
+                  Web-Mgmt-Tools,
+                  Web-Mgmt-Console,
+                  NET-Framework-45-Features,
+                  NET-Framework-45-Core,
+                  NET-Framework-45-ASPNET
+            state: present
+        async: 900
+
+      - name: Bind IIS to 443 with SSL cert
+        win_iis_webbinding:
+            name: "Default Web Site"
+            protocol: https
+            port: 443
+            certificate_hash: "{{iis_cert.thumbprints.0}}"
+            state: present
+        when: iis_cert.changed

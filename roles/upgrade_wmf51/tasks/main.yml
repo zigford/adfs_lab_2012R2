@@ -1,0 +1,26 @@
+---
+- name: Download WMF 5.1
+  when:
+      - ansible_powershell_version == 4
+      - ansible_distribution_version == '6.3.9600.0'
+
+  win_get_url:
+      url: "https://download.microsoft.com/download/6/F/5/\
+            6F5FF66C-6775-42B0-86C4-47D41F2DA187/\
+            Win8.1AndW2K12R2-KB3191564-x64.msu"
+      dest: '%TEMP%\KB3191564.msu'
+      checksum: 91d95a0ca035587d4c1babe491f51e06a1529843
+      timeout: 200
+
+- name: Install WMF 5.1
+  win_hotfix:
+      source: '%TEMP%\KB3191564.msu'
+      state: present
+      hotfix_identifier: "Microsoft-Windows-WinMan-WinIP-Package-TopLevel\
+                          ~31bf3856ad364e35~amd64~~7.2.9600.16384"
+  register: hotfix_install
+
+- name: Reboot after Pwsh install
+  when: hotfix_install.reboot_required
+  win_reboot:
+      post_reboot_delay: 60

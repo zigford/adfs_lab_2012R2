@@ -1,0 +1,11 @@
+---
+- name: Join domain
+  win_domain_membership:
+    dns_domain_name: "{{ domain }}"
+    state: domain
+    domain_admin_user: vagrant@{{ domain }}
+    domain_admin_password: vagrant
+  register: domain_state
+
+- win_reboot:
+  when: domain_state.reboot_required

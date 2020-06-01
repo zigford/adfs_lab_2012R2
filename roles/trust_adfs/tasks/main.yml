@@ -1,0 +1,10 @@
+---
+- name: Upload public key
+  win_copy:
+    src: files/adfs.{{ domain }}.cer
+    dest: C:\ansible\
+- name: Import trusted CA
+  win_certificate_store:
+    path: C:\ansible\adfs.{{ domain }}.cer
+    state: present
+    store_name: AuthRoot

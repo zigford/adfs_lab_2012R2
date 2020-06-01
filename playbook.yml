@@ -1,0 +1,8 @@
+---
+# Playbook which builds the entire environment
+- import_playbook: dc-playbook.yml
+- import_playbook: adfs-playbook.yml
+- import_playbook: app-playbook.yml
+- import_playbook: installApp-playbook.yml
+- import_playbook: registerApp-playbook.yml
+- import_playbook: workstation-playbook.yml

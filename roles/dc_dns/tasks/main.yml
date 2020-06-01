@@ -1,0 +1,30 @@
+---
+- name: get interface
+  win_shell: |
+      get-netroute -AddressFamily IPv4 -DestinationPrefix 192.168.33.0/24|
+      Select-Object -ExpandProperty InterfaceAlias
+  register: ifAlias
+  changed_when: false
+
+- name: add default gateway for private ip
+  win_shell: |
+    $ConfirmPreference = "None"
+    New-NetRoute -InterfaceAlias "{{ ifAlias.stdout | trim }}" `
+        -AddressFamily IPv4 `
+        -NextHop 192.168.33.1 `
+        -DestinationPrefix 0.0.0.0/0 `
+        -EA SilentlyContinue
+  register: new_netroute
+  changed_when: "'192.168.33.1' in new_netroute.stdout"
+  failed_when: false
+  async: 20
+  poll: 5
+
+- win_shell: >
+    Set-NetIPInterface -InterfaceAlias "{{ ifAlias.stdout | trim }}"
+    -InterfaceMetric 1
+
+- name: set dns to dc
+  win_dns_client:
+    adapter_names: "{{ ifAlias.stdout | trim }}"
+    ipv4_addresses: 192.168.33.10
