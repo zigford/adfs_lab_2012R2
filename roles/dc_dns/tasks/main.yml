@@ -27,5 +27,9 @@
 
 - name: set dns to dc
   win_dns_client:
-    adapter_names: "{{ ifAlias.stdout | trim }}"
+    adapter_names: Ethernet
+    ipv4_addresses: 192.168.33.10
+
+- win_dns_client:
+    adapter_names: Ethernet 2
     ipv4_addresses: 192.168.33.10
