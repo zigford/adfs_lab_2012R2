@@ -5,7 +5,6 @@
     - dc_dns
     - trust_app
     - trust_adfs
-    - join_domain
   tasks:
     - name: Install ADFS Certifictate
       win_copy:
