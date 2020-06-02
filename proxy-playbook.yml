@@ -1,0 +1,46 @@
+---
+- hosts: proxy
+  vars_files: vars.yml
+  roles:
+    - dc_dns
+    - trust_app
+    - trust_adfs
+    - join_domain
+  tasks:
+    - name: Install ADFS Certifictate
+      win_copy:
+        src: files/adfs.{{ domain }}.pfx
+        dest: C:\ansible\
+
+    - win_certificate_store:
+        path: C:\ansible\adfs.{{ domain }}.pfx
+        state: present
+        password: password
+        key_exportable: true
+        key_storage: machine
+        file_type: pkcs12
+      register: importedCert
+      become: true
+      become_user: vagrant
+
+    - name: Install web proxy
+      win_feature:
+        name: Web-Application-Proxy
+        state: present
+        include_sub_features: true
+        include_management_tools: true
+      async: 300
+      poll: 60
+
+    - name: Setup ADFS Proxu server
+      win_shell: |
+        $cd = New-Object -TypeName `
+            System.Management.Automation.PSCredential `
+            -ArgumentList "vagrant",
+            (ConvertTo-SecureString -Force -AsPlainText -String `
+                "vagrant")
+
+        Install-WebApplicationProxy `
+            -FederationServiceTrustCredential $cd `
+            -CertificateThumbprint "{{importedCert.thumbprints.0}}" `
+            -FederationServiceName "adfs.{{domain}}"
