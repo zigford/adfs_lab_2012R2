@@ -23,6 +23,7 @@
 - win_shell: >
     Set-NetIPInterface -InterfaceAlias "{{ ifAlias.stdout | trim }}"
     -InterfaceMetric 1
+  when: new_netroute.changed
 
 - name: set dns to dc
   win_dns_client:
