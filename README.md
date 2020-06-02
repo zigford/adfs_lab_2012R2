@@ -20,3 +20,7 @@ to create.
 Then run: 
 
 `ansible-playbook -i hosts playbook.yml`
+
+# Known Issues
+
+These playbooks faithfully recreates the lab in the video series and includes a bug where WindowsAuthentication did not work in the lab. The fix is to add an SPN for the ADFS service account. This is fixed in the proxy branch
