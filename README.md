@@ -1,3 +1,9 @@
+# Update:
+
+This branch deviates from the master branch and adds an ADFS proxy,
+joins the workstation to the domain and makes the adfs service account a bit
+more like a production one
+
 # adfs_lab_2012R2
 Ansible and Vagrant config files to produce an ADFS lab
 
