@@ -47,7 +47,16 @@
         groups_action: add
         state: present
 
-    # Create certificates needed for all other servers
+    - name: Check service account spn
+      win_command: setspn -Q http/adfs.{{ domain }}
+      register: spn
+      changed_when: false
+
+    - name: Set service account spn
+      win_command: setspn -s http/adfs.{{ domain }} svc_adfs
+      when: spn.stdout.find("No such SPN found") != -1
+
+#    Create certificates needed for all other servers
 
     - name: Create App certificate
       win_shell: |

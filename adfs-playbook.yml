@@ -97,9 +97,9 @@
         win_shell: >
             Set-AdfsGlobalAuthenticationPolicy
             -PrimaryIntranetAuthenticationProvider
-            FormsAuthentication
+            WindowsAuthentication
         when:
-            (adfs_intra_provider.stdout.find("WindowsAuthentication") != -1) or
+            (adfs_intra_provider.stdout.find("FormsAuthentication") != -1) or
             (adfs_intra_provider.stdout.find("CertificateAuthentication") != -1)
 
       - name: Get ADFS thumbprint
