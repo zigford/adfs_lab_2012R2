@@ -1,0 +1,5 @@
+---
+hosts: multi
+roles:
+    - dc_dns
+    - default

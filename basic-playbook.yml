@@ -1,0 +1,5 @@
+---
+# Playbook which builds just sets up a basic domain
+- import_playbook: dc-playbook.yml
+- import_playbook: defaults-playbook.yml
+- import_playbook: setup_domain_machines.yml

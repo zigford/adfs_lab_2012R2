@@ -3,3 +3,4 @@
 domain: jph.test
 short_domain: jph
 adfs_service: Jesse Test
+token_signing_thumbprint: 4145D7D0BD786BB5AC437DE77FF7F931AA6D3077

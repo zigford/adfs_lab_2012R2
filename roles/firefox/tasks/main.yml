@@ -1,0 +1,34 @@
+---
+- name: install firefox
+  win_stat:
+      path: c:\program files\mozilla firefox
+  register: firefox
+
+- win_get_url:
+      url: https://download.mozilla.org/?product=firefox-msi-latest-ssl&os=win64&lang=en-us
+      dest: 'c:\windows\temp\firefox.msi'
+  when: firefox.stat.exists == false
+
+- win_package:
+      path: 'c:\windows\temp\firefox.msi'
+      state: present
+  when: firefox.stat.exists == false
+
+- name: Check enterprise roots config for firefox
+  win_stat:
+      path: C:\Program Files\Mozilla Firefox\umberella.cfg
+  register: umberella
+
+- win_copy:
+      dest: C:\Program Files\Mozilla Firefox\umberella.cfg
+      content: |
+          //
+          lockPref("security.enterprise_roots.enable", true);
+  when: umberella.stat.exists == false
+
+- win_copy:
+      dest: C:\Program Files\Mozilla Firefox\defaults\pref\local-settings.js
+      content: |
+          pref("general.config.obscure_value", 0);
+          pref("general.config.filename", "umberella.cfg");
+  when: umberella.stat.exists == false

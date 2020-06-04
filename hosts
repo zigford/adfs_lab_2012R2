@@ -1,7 +1,10 @@
 [dc]
 192.168.33.10
 
-[adfs]
+[adfs01]
+192.168.33.80
+
+[adfs02]
 192.168.33.20
 
 [app]
@@ -11,14 +14,19 @@
 192.168.33.40
 
 [proxy]
-192.168.33.50
+192.168.33.55
+
+[ext]
+192.168.33.100
 
 [multi:children]
 dc
+adfs01
+adfs02
 app
 workstation
-adfs
 proxy
+ext
 
 [multi:vars]
 ansible_user=vagrant

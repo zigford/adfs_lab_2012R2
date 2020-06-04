@@ -1,0 +1,21 @@
+---
+- hosts: ext
+  vars_files: vars.yml
+  roles:
+      - firefox
+      - default
+      - trust_app
+      - trust_adfs
+  tasks:
+      # Adjust hosts file to fake external user
+      - name: Add proxy adfs IP to adfs.
+        win_hosts:
+            state: present
+            canonical_name: adfs.{{ domain }}
+            ip_address: 192.168.33.50
+  
+      - name: Add app IP
+        win_hosts:
+            state: present
+            canonical_name: app.{{ domain }}
+            ip_address: 192.168.33.30

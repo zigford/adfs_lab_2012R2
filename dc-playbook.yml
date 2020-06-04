@@ -2,17 +2,25 @@
 - hosts: dc
   vars_files: vars.yml
   roles:
-    - {role: upgrade_wmf51, when: ansible_powershell_version == 4}
+    - {role: upgrade_wmf51, when: ansible_powershell_version == '4'}
     - pwsh_gallery
+    - default
   tasks:
     - name: Ensure AD Domain Services is installed
-      win_feature:
+      win_shell: >
+          Get-WindowsFeature AD-Domain-Services |
+          Select-Object -ExpandProperty InstallState
+      register: ad
+      changed_when: false
+
+    - win_feature:
         name: AD-Domain-Services
         state: present
         include_sub_features: true
         include_management_tools: true
       async: 900
       poll: 120
+      when: ad.stdout.find("Installed") == -1
 
     - name: Create a new domain in a new forest
       win_domain:
@@ -23,6 +31,7 @@
 
     - include_role:
         name: dc_dns
+      when: domain_install.changed
 
     - name: Reboot after DC install
       when: domain_install.reboot_required == true
@@ -43,18 +52,10 @@
         upn: svc_adfs@{{ domain }}
         password: B0bP4ssw0rd
         password_never_expires: true
+        update_password: on_create
         groups: "Domain Admins"
         groups_action: add
         state: present
-
-    - name: Check service account spn
-      win_command: setspn -Q http/adfs.{{ domain }}
-      register: spn
-      changed_when: false
-
-    - name: Set service account spn
-      win_command: setspn -s http/adfs.{{ domain }} svc_adfs
-      when: spn.stdout.find("No such SPN found") != -1
 
 #    Create certificates needed for all other servers
 
@@ -96,7 +97,7 @@
 
     - name: Ensure encryptdecrypt ps module present
       win_psmodule:
-        name: pspki
+        name: encryptdecrypt
         state: present
 
     - name: Ensure permissions on Lab Cert dir
@@ -108,9 +109,10 @@
 
     - name: Ensure ADFS cert generated
       win_shell: >4
-          Import-Module PSPKI;
+          Import-Module encryptdecrypt;
           New-SelfsignedCertificateEx
           -Subject "CN=adfs.{{ domain }}"
+          -SAN "adfs.{{domain}}","enterpriseregistration.{{domain}}"
           -ProviderName
           "Microsoft Enhanced RSA and AES Cryptographic Provider"
           -KeyLength 2048

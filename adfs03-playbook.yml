@@ -1,7 +1,8 @@
 ---
-- hosts: adfs
+- hosts: adfs02
   vars_files: vars.yml
   roles:
+      - default
       - dc_dns
       - trust_app
       - join_domain
@@ -58,7 +59,7 @@
         include_role:
             name: trust_adfs
 
-      - name: Install ADFS Farm
+      - name: Add to ADFS Farm
         win_shell: |
             $cred = New-Object -TypeName `
                 System.Management.Automation.PSCredential `
@@ -72,45 +73,14 @@
                   "vagrant")
 
             Import-Module ADFS
-            Install-AdfsFarm `
+            Add-AdfsFarmNode `
                 -CertificateThumbprint:"{{importedCert.thumbprints.0}}" `
-                -FederationServiceDisplayName:"{{adfs_service}}" `
-                -FederationServiceName:"adfs.{{domain}}" `
+                -PrimaryComputerName:"adfs01.{{domain}}" `
                 -ServiceAccountCredential:$cred `
                 -credential:$cd
-             New-Item -Path C:\Windows\adfs.txt -ItemType File
+            New-Item -Path C:\Windows\adfs.txt -ItemType File
         args:
             creates: C:\Windows\adfs.txt
         become: true
         become_user: "{{ short_domain }}\\administrator"
         register: install_adfs
-
-      - name: Get ADFS Global Intranet Auth Policy
-        win_shell: >
-            Get-AdfsGlobalAuthenticationPolicy |
-            Select-Object -Expandproperty
-            PrimaryIntranetAuthenticationProvider
-        register: adfs_intra_provider
-        changed_when: false
-
-      - name: Ensure ADFS Global Intranet Auth policy set to forms
-        win_shell: >
-            Set-AdfsGlobalAuthenticationPolicy
-            -PrimaryIntranetAuthenticationProvider
-            WindowsAuthentication
-        when:
-            (adfs_intra_provider.stdout.find("FormsAuthentication") != -1) or
-            (adfs_intra_provider.stdout.find("CertificateAuthentication") != -1)
-
-      - name: Get ADFS thumbprint
-        win_shell: >
-            Get-AdfsCertificate -CertificateType Token-Signing |
-            Select-Object -ExpandProperty Thumbprint
-        changed_when: false
-        register: adfs_thumbprint
-
-      - name: register adfs host thumbprint
-        add_host:
-            name: "adfs_host"
-            adfs_thumbprint: "{{ adfs_thumbprint.stdout | trim }}"
-        changed_when: false

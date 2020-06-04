@@ -1,5 +1,5 @@
 ---
-- hosts: adfs
+- hosts: adfs01
   vars_files: vars.yml
   tasks:
       - name: download sample web app

@@ -11,6 +11,7 @@ Vagrant.configure("2") do |config|
     libvirt.hyperv_feature :name => 'vapic', :state => 'on'
     libvirt.memory = "1024"
     libvirt.volume_cache = "unsafe"
+    libvirt.cpus = 2
   end
 
   config.vm.box = "peru/windows-server-2012_r2-standard-x64-eval"
@@ -23,9 +24,19 @@ Vagrant.configure("2") do |config|
     #  ansible.playbook = "dc-playbook.yml"
     #end
   end
-  config.vm.define "adfs" do|dc|
-    dc.vm.hostname = "adfs"
-    dc.vm.network "private_network", ip: "192.168.33.20"
+  config.vm.define "adfs01" do|adfs01|
+    adfs01.vm.box = "peru/windows-server-2019-datacenter-x64-eval"
+    adfs01.vm.provider :libvirt do | lv |
+      lv.memory = 2048
+      lv.cpus = 4
+    end
+    adfs01.vm.hostname = "adfs01"
+    adfs01.vm.network "private_network", ip: "192.168.33.20"
+  end
+  
+  config.vm.define "adfs02" do|adfs02|
+    adfs02.vm.hostname = "adfs02"
+    adfs02.vm.network "private_network", ip: "192.168.33.60"
   end
 
   config.vm.define "app" do|app|
@@ -43,6 +54,30 @@ Vagrant.configure("2") do |config|
     proxy.vm.network "private_network", ip: "192.168.33.50"
   end
 
+  config.vm.define "ext" do | ext |
+    ext.vm.hostname = "ext"
+    ext.vm.network "private_network", ip: "192.168.33.100"
+  end
+
+  config.vm.define "adfs03" do | adfs03 |
+    adfs03.vm.box = "peru/windows-server-2019-datacenter-x64-eval"
+    adfs03.vm.provider :libvirt do | lv |
+      lv.memory = 2048
+      lv.cpus = 4
+    end
+    adfs03.vm.hostname = "adfs03"
+    adfs03.vm.network "private_network", ip: "192.168.33.80"
+  end
+
+  config.vm.define "proxy02" do | proxy02 |
+    proxy02.vm.box = "peru/windows-server-2019-datacenter-x64-eval"
+    proxy02.vm.provider :libvirt do | lv |
+      lv.memory = 2048
+      lv.cpus = 4
+    end
+    proxy02.vm.hostname = "proxy02"
+    proxy02.vm.network "private_network", ip: "192.168.33.55"
+  end
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
   # `vagrant box outdated`. This is not recommended.

@@ -26,6 +26,14 @@
             creates: 'C:\inetpub\wwwroot\SamApp\Web.config'
         register: samp_app_installed
 
+      - name: get token signing thumbprint
+        win_copy:
+            src: files/thumbprint.txt
+            dest: c:\ansible\
+
+      - win_shell: get-content c:\ansible\thumbprint.txt
+        register: thumbprint
+
       - name: set sample app adfs thumbprint
         win_xml:
             path: C:\inetpub\wwwroot\SampApp\Web.config
@@ -33,7 +41,7 @@
                     /identityConfiguration/issuerNameRegistry\
                     /authority/keys/add"
             attribute: 'thumbprint'
-            fragment: "{{ hostvars['adfs_host']['adfs_thumbprint'] }}"
+            fragment: "{{ thumbprint.stdout | trim }}"
             type: attribute
         when: samp_app_installed.changed
 
@@ -105,8 +113,7 @@
 
       - name: Check SampApp Registered as IIS App
         win_shell: >
-            Get-WebApplication -Name SampApp |
-            Select-Object -ExpandProperty Name
+            Get-WebApplication
         register: Web_Application
         changed_when: false
 

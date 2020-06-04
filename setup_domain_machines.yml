@@ -1,0 +1,3 @@
+---
+hosts: adfs01,adfs02,workstation
+roles: join_domain
