@@ -20,7 +20,8 @@
   async: 20
   poll: 5
 
-- win_shell: >
+- name: Set private ip interface metric to 1
+  win_shell: >
     Set-NetIPInterface -InterfaceAlias "{{ ifAlias.stdout | trim }}"
     -InterfaceMetric 1
 
