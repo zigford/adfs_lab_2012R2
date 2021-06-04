@@ -101,9 +101,7 @@
         when: samp_app_installed.changed
 
       - name: Check SampApp Registered as IIS App
-        win_shell: >
-            Get-WebApplication -Name SampApp |
-            Select-Object -ExpandProperty Name
+        win_shell: Get-WebApplication -Name SampApp
         register: Web_Application
         changed_when: false
 
