@@ -9,8 +9,9 @@ Vagrant.configure("2") do |config|
   config.vm.provider :libvirt do |libvirt|
     libvirt.hyperv_feature :name => 'relaxed', :state => 'on'
     libvirt.hyperv_feature :name => 'vapic', :state => 'on'
-    libvirt.memory = "1024"
-    libvirt.volume_cache = "unsafe"
+    libvirt.memory = "2048"
+    libvirt.cpus = 2
+    libvirt.disk_driver :cache => 'unsafe'
   end
 
   config.vm.box = "peru/windows-server-2012_r2-standard-x64-eval"
