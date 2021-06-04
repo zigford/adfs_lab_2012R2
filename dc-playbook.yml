@@ -28,6 +28,15 @@
       when: domain_install.reboot_required == true
       win_reboot:
 
+    - name: wait for services to start up
+      ansible.windows.win_service_info:
+        name: DNS
+      register: dns_started
+      until:
+        - dns_started.services[0].process_id is defined
+        - dns_started.services[0].process_id != ""
+      retries: 10
+
     - name: Add DNS entry for App server
       win_dns_record:
         name: app
