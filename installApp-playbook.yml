@@ -12,92 +12,92 @@
 
       - name: extract sample app
         win_unzip:
-            src: '%TEMP%\SampAppRules.zip'
-            dest: '%TEMP%\SampApp'
-            creates: '%TEMP%\SampApp'
+          src: '%TEMP%\SampAppRules.zip'
+          dest: '%TEMP%\SampApp'
+          creates: '%TEMP%\SampApp'
 
       - name: install sample app into iis
         win_unzip:
-            src: '%TEMP%\SampApp\SampApp and Rules\SampApp.zip'
-            dest: 'C:\inetpub\wwwroot'
-            creates: 'C:\inetpub\wwwroot\SamApp\Web.config'
+          src: '%TEMP%\SampApp\SampApp and Rules\SampApp.zip'
+          dest: 'C:\inetpub\wwwroot'
+          creates: 'C:\inetpub\wwwroot\SamApp\Web.config'
         register: samp_app_installed
 
       - name: set sample app adfs thumbprint
         win_xml:
-            path: C:\inetpub\wwwroot\SampApp\Web.config
-            xpath: "//configuration/system.identityModel\
-                    /identityConfiguration/issuerNameRegistry\
-                    /authority/keys/add"
-            attribute: 'thumbprint'
-            fragment: "{{ hostvars['adfs_host']['adfs_thumbprint'] }}"
-            type: attribute
+          path: C:\inetpub\wwwroot\SampApp\Web.config
+          xpath: "//configuration/system.identityModel\
+                  /identityConfiguration/issuerNameRegistry\
+                  /authority/keys/add"
+          attribute: 'thumbprint'
+          fragment: "{{ hostvars['adfs_host']['adfs_thumbprint'] }}"
+          type: attribute
         when: samp_app_installed.changed
 
       - name: Update sample app web.config
         win_xml:
-            path: C:\inetpub\wwwroot\SampApp\Web.config
-            xpath: '//authority'
-            attribute: 'name'
-            fragment: 'http://adfs.{{ domain }}/adfs/services/trust'
-            type: attribute
+          path: C:\inetpub\wwwroot\SampApp\Web.config
+          xpath: '//authority'
+          attribute: 'name'
+          fragment: 'http://adfs.{{ domain }}/adfs/services/trust'
+          type: attribute
         when: samp_app_installed.changed
 
       - win_xml:
-            path: C:\inetpub\wwwroot\SampApp\Web.config
-            xpath: '//appSettings/add[@key="ida:FederationMetadataLocation"]'
-            attribute: 'value'
-            fragment: "https://adfs.{{ domain }}/federationmetadata\
-                       /2007-06/FederationMetadata.xml"
-            type: attribute
+          path: C:\inetpub\wwwroot\SampApp\Web.config
+          xpath: '//appSettings/add[@key="ida:FederationMetadataLocation"]'
+          attribute: 'value'
+          fragment: "https://adfs.{{ domain }}/federationmetadata\
+                      /2007-06/FederationMetadata.xml"
+          type: attribute
         when: samp_app_installed.changed
 
       - win_xml:
-            path: C:\inetpub\wwwroot\SampApp\Web.config
-            xpath: '//appSettings/add[@key="ida:Issuer"]'
-            attribute: 'value'
-            fragment: "http://adfs.{{ domain }}/adfs/ls/"
-            type: attribute
+          path: C:\inetpub\wwwroot\SampApp\Web.config
+          xpath: '//appSettings/add[@key="ida:Issuer"]'
+          attribute: 'value'
+          fragment: "http://adfs.{{ domain }}/adfs/ls/"
+          type: attribute
         when: samp_app_installed.changed
 
       - win_xml:
-            path: C:\inetpub\wwwroot\SampApp\Web.config
-            xpath: '//validIssuers/add'
-            attribute: 'name'
-            fragment: "http://adfs.{{ domain }}/adfs/services/trust"
-            type: attribute
+          path: C:\inetpub\wwwroot\SampApp\Web.config
+          xpath: '//validIssuers/add'
+          attribute: 'name'
+          fragment: "http://adfs.{{ domain }}/adfs/services/trust"
+          type: attribute
         when: samp_app_installed.changed
 
       - win_xml:
-            path: C:\inetpub\wwwroot\SampApp\Web.config
-            xpath: '//wsFederation'
-            attribute: 'issuer'
-            fragment: "https://adfs.{{ domain }}/adfs/ls/"
-            type: attribute
+          path: C:\inetpub\wwwroot\SampApp\Web.config
+          xpath: '//wsFederation'
+          attribute: 'issuer'
+          fragment: "https://adfs.{{ domain }}/adfs/ls/"
+          type: attribute
         when: samp_app_installed.changed
 
       - win_xml:
-            path: C:\inetpub\wwwroot\SampApp\Web.config
-            xpath: '//audienceUris/add'
-            attribute: 'value'
-            fragment: "https://app.{{ domain }}/sampapp/"
-            type: attribute
+          path: C:\inetpub\wwwroot\SampApp\Web.config
+          xpath: '//audienceUris/add'
+          attribute: 'value'
+          fragment: "https://app.{{ domain }}/sampapp/"
+          type: attribute
         when: samp_app_installed.changed
 
       - win_xml:
-            path: C:\inetpub\wwwroot\SampApp\Web.config
-            xpath: '//wsFederation'
-            attribute: 'realm'
-            fragment: "https://app.{{ domain }}/sampapp/"
-            type: attribute
+          path: C:\inetpub\wwwroot\SampApp\Web.config
+          xpath: '//wsFederation'
+          attribute: 'realm'
+          fragment: "https://app.{{ domain }}/sampapp/"
+          type: attribute
         when: samp_app_installed.changed
 
       - win_xml:
-            path: "C:\\inetpub\\wwwroot\\SampApp\\FederationMetadata\\2007-06\
-                   \\FederationMetadata.xml"
-            xpath: "//*[name()='wsa:Address']"
-            fragment: 'https://app.{{ domain }}/sampapp/'
-            type: text
+          path: "C:\\inetpub\\wwwroot\\SampApp\\FederationMetadata\\2007-06\
+                  \\FederationMetadata.xml"
+          xpath: "//*[name()='wsa:Address']"
+          fragment: 'https://app.{{ domain }}/sampapp/'
+          type: text
         when: samp_app_installed.changed
 
       - name: Check SampApp Registered as IIS App
@@ -107,6 +107,6 @@
 
       - name: Convert App to IIS App
         win_shell: >
-            ConvertTo-WebApplication
-            'IIS:\Sites\Default Web Site\SampApp'
+          ConvertTo-WebApplication
+          'IIS:\Sites\Default Web Site\SampApp'
         when: Web_Application.stdout.find("SampApp") == -1

@@ -10,25 +10,25 @@
 
       - name: extract sample app
         win_unzip:
-            src: '%TEMP%\SampAppRules.zip'
-            dest: '%TEMP%\SampApp'
-            creates: '%TEMP%\SampApp'
+          src: '%TEMP%\SampAppRules.zip'
+          dest: '%TEMP%\SampApp'
+          creates: '%TEMP%\SampApp'
 
       - name: Extract rules
         win_unzip:
-            src: '%TEMP%\SampApp\SampApp and Rules\SampAppRules.zip'
-            dest: 'C:\ansible'
-            creates: 'C:\ansible\IssuanceTransformRules.txt'
+          src: '%TEMP%\SampApp\SampApp and Rules\SampAppRules.zip'
+          dest: 'C:\ansible'
+          creates: 'C:\ansible\IssuanceTransformRules.txt'
 
       - name: Add relying party trust to adfs
         win_shell: >
-            Add-AdfsRelyingPartyTrust -Name
-            "Sample Claims Aware Application"
-            -IssuanceAuthorizationRulesFile
-            C:\ansible\IssuanceAuthorizationRules.txt
-            -IssuanceTransformRulesFile
-            C:\ansible\IssuanceTransformRules.txt
-            -MetadataUrl
-            https://app.{{ domain }}/sampapp/federationmetadata/2007-06/federationmetadata.xml
+          Add-AdfsRelyingPartyTrust -Name
+          "Sample Claims Aware Application"
+          -IssuanceAuthorizationRulesFile
+          C:\ansible\IssuanceAuthorizationRules.txt
+          -IssuanceTransformRulesFile
+          C:\ansible\IssuanceTransformRules.txt
+          -MetadataUrl
+          https://app.{{ domain }}/sampapp/federationmetadata/2007-06/federationmetadata.xml
         become: true
         become_user: "{{ short_domain }}\\administrator"
