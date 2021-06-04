@@ -4,12 +4,9 @@
   tasks:
       - name: download sample web app
         win_get_url:
-            url: "https://msdnshared.blob.core.windows.net/media\
-                  /TNBlogsFS/prod.evol.blogs.technet.com\
-                  /telligent.evolution.components.attachments\
-                  /01/8598/00/00/03/64/54/88/SampApp%20and%20Rules.zip"
-            dest: '%TEMP%\SampAppRules.zip'
-            checksum: 0e2e51c8e43e1639ad6c0e87e960564add83b695
+          url: "http://ftp.zigford.org/adfs/SampApp%20and%20Rules.zip"
+          dest: '%TEMP%\SampAppRules.zip'
+          checksum: 0e2e51c8e43e1639ad6c0e87e960564add83b695
 
       - name: extract sample app
         win_unzip:
